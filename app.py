@@ -36,7 +36,7 @@ st.set_page_config(
     layout='wide',
     menu_items={
         'Get Help': None,
-        'Report a bug': 'mailto:j.chabanol@mediagraphic-groupe.fr',
+        'Report a bug': None,
         'About': "App created by Jean CHABANOL-SEROUDE for MediaGraphic Group"
     }
 )
