@@ -44,20 +44,20 @@ st.set_page_config(
 st.title("Création d'étiquettes pour livraison conteneur")
 st.write("-"*10)
 
-cols = st.columns((10,1,10,1,10,1,10,1,10,1,10))
+cols = st.columns((10,1,7,1,6,1,6,1,6,1,8))
 
 def load_products():
     global products
     # products = pd.read_csv("product.csv", header=None)[0].to_list()
 
-    with open('producTT.csv', newline='') as f:
+    with open('product.csv', newline='') as f:
         reader = csv.reader(f)
         products = [i[0] for i in list(reader)]
     return
 
 def update_products():
     global products
-    with open("producTT.csv", "w", newline="") as f:
+    with open("product.csv", "w", newline="") as f:
         writer = csv.writer(f)
         writer.writerows([[i] for i in products + [product]])
 
@@ -65,7 +65,7 @@ if 'products' not in globals():
     load_products()
 
 with cols[0]:
-    product = st.multiselect("Nom du produit :", options=['Autre'] + sorted(products), max_selections=1, default=(st.session_state['product'] if 'product' in st.session_state else None))
+    product = st.multiselect("Nom du produit :", options=['Autre'] + sorted(products), max_selections=1, default=(st.session_state['product'] if 'product' in st.session_state else 'Pure Banner 330 DG'))
     if product:
         product = product[0]
         if 'product' in st.session_state and product!='Autre':
@@ -96,9 +96,9 @@ with cols[2]:
     laize = st.selectbox("Conditionnement :", options=condit_options, index=len(condit_options)-2)
     if laize=='Autre':
         laize = st.text_input("Préciser en respectant ce format :", placeholder="1m20 x 25m")
-        disabled_laize_button = (False if product else True)                
-        if st.button("Ajouter ces dimensions à la liste", disabled=disabled_laize_button):
-            print("MAJ")
+        # disabled_laize_button = (False if product else True)                
+        # if st.button("Ajouter ces dimensions à la liste", disabled=disabled_laize_button):
+        #     print("MAJ")
 
 fire_options = [
     "Aucun",
@@ -112,6 +112,8 @@ with cols[4]:
     fire = st.selectbox("Traitement feu :", options=fire_options, index=1)
     if fire=='Aucun':
         fire = None
+    if fire=='Autre':
+        fire = st.text_input("Préciser :", placeholder="Classé")
 
 with cols[6]:
     date = st.date_input("Date d'arrivage :")
@@ -120,9 +122,9 @@ with cols[6]:
 with cols[8]:
     label_limit = st.number_input("Nombre d'étiquettes nécessaires :", value = 21)
 
-company_options = ["MediaVision", "MediaPrint", "MediaFix"]
+company_options = ["MediaVision Blanc", "MediaPrint Blanc", "MediaFix Blanc", "MediaVision Noir", "MediaPrint Noir", "MediaFix Noir"]
 with cols[10]:
-    company = st.selectbox("Logo :", options=company_options).lower()
+    company = st.selectbox("Logo :", options=sorted(company_options, reverse=True)).lower().replace(" ", "_")
     background_color = hex_to_rgb(st.color_picker("Couleur de fond :", '#FFFFFF', label_visibility="visible"))
 
 for i in range(1, 11, 2):
@@ -144,7 +146,7 @@ def create_label():
     #pdf.set_fill_color(background_color)
     exec(f"pdf.set_fill_color{background_color}")
     pdf.add_page()
-    pdf.set_font('Times')
+    pdf.set_font('Helvetica')
     pdf.set_margins(0,0)
     pdf.set_auto_page_break(True, margin=0)
     cell_height = 297/7
@@ -167,7 +169,7 @@ def create_label():
         for j in range(3):
             x = cell_width*j
             pdf.rect(x=x, y=y,w=210/3, h=297/7, style='FD')
-            pdf.redimAuto(f"{company}_blanc.png", centreX=x+210/6, centreY=y+image_height/2, wMax = 210/3, hMax = 1000, redim = 0)
+            pdf.redimAuto(f"logo/{company}.png", centreX=x+210/6, centreY=y+image_height/2, wMax = 210/3, hMax = 1000, redim = 0)
             pdf.set_xy(x=x, y=y+image_height)
             pdf.multi_cell(txt=label_text, w=(210/3), h=(cell_height-image_height)/line_number, border=False, new_x='RIGHT', new_y='TOP', align='C')
             label_count += 1
@@ -186,14 +188,14 @@ def show_one_label():
     pdf.set_auto_page_break(False, margin=0)
     pdf.set_page_background(background_color)
     pdf.add_page()
-    pdf.set_font('Times')
+    pdf.set_font('Helvetica')
     pdf.set_margins(0,0)
     cell_height = 297/7
     cell_width = 210/3
     image_height = cell_height/3
     pdf.set_xy(0,0)
     line_number = label_text.count("\n")+1
-    pdf.redimAuto(f"{company}_blanc.png", centreX=210/6, centreY=image_height/2, wMax = 210/3, hMax = 1000, redim = 0)
+    pdf.redimAuto(f"logo/{company}.png", centreX=210/6, centreY=image_height/2, wMax = 210/3, hMax = 1000, redim = 0)
     pdf.set_xy(x=0, y=image_height)
     pdf.multi_cell(txt=label_text, w=(210/3), h=(cell_height-image_height)/line_number, border=False, align='C')
     st.image(convert_from_bytes(bytes(pdf.output())), width=350)
