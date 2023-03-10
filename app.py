@@ -147,31 +147,43 @@ def create_label():
     exec(f"pdf.set_fill_color{background_color}")
     pdf.add_page()
     pdf.set_font('Helvetica')
-    pdf.set_margins(0,0)
-    pdf.set_auto_page_break(True, margin=0)
-    cell_height = 297/7
-    cell_width = 210/3
-    image_height = cell_height/3
+
+    marge = 3
+    pdf.set_margin(marge)
+    label_height = 297/7
+    label_width = 210/3
 
     line_number = label_text.count("\n")+1
 
-    pdf.set_xy(0,0)
     i = 0
     label_count = 0
     while label_count<label_limit:
-        if pdf.get_y() > 230:
+        if i==7:
             pdf.add_page()
             i = 0
             pdf.set_xy(0,0)
+        if i==0 or i==6:
+            cell_height = label_height - marge
+        else:
+            cell_height = label_height
         
-        y = cell_height*i
+        y = label_height*i + (marge if i==0 else 0)
         
         for j in range(3):
-            x = cell_width*j
-            pdf.rect(x=x, y=y,w=210/3, h=297/7, style='FD')
+            if j==0 or j==2:
+                cell_width = label_width - marge
+            elif j==1:
+                cell_width = label_width
+
+            x = label_width*j + (marge if j==0 else 0)
+            pdf.rect(x=x, y=y,w=cell_width, h=cell_height, style='FD')
+
+            image_height = cell_height/3
             pdf.redimAuto(f"logo/{company}.png", centreX=x+210/6, centreY=y+image_height/2, wMax = 210/3, hMax = 1000, redim = 0)
+
             pdf.set_xy(x=x, y=y+image_height)
-            pdf.multi_cell(txt=label_text, w=(210/3), h=(cell_height-image_height)/line_number, border=False, new_x='RIGHT', new_y='TOP', align='C')
+            pdf.multi_cell(txt=label_text, w=cell_width, h=(cell_height-image_height)/line_number, border=False, align='C')
+
             label_count += 1
             if label_count >= label_limit:
                 break
