@@ -6,6 +6,55 @@ from datetime import datetime
 from pdf2image import convert_from_bytes, convert_from_path
 import pandas as pd
 import csv
+import streamlit_authenticator as stauth
+import yaml
+
+
+authorized_connection = False
+if not 'authentication_status' in st.session_state or st.session_state['authentication_status']==None or st.session_state['authentication_status']==False:
+    st.session_state['layout'] = 'centered'
+else:
+    st.session_state['layout'] = 'wide'
+
+# Configuration
+st.set_page_config(
+    page_title="Outil de création d'étiquettes",
+    page_icon="🏷️",
+    layout=st.session_state['layout'],
+    menu_items={
+        'Get Help': None,
+        'Report a bug': None,
+        'About': "App created by Jean CHABANOL-SEROUDE for MediaGraphic Group"
+    }
+)
+
+with open('../env/config_users.yaml') as file:
+    config = yaml.load(file, Loader=yaml.SafeLoader)
+
+authenticator = stauth.Authenticate(
+    config['credentials'],
+    config['cookie']['name'],
+    config['cookie']['key'],
+    config['cookie']['expiry_days'],
+    config['preauthorized']
+)
+
+name, authentication_status, username = authenticator.login('Connexion', 'main')
+creator_name = name
+
+if authentication_status:
+    authenticator.logout('Déconnexion', 'main')
+    st.write(f'Bienvenue *{name}*')
+    authorized_connection = True
+    st.session_state['layout'] = 'wide'
+elif authentication_status == False:
+    if st.session_state['username'] not in config['credentials']['usernames']:
+        st.warning('Identifiant incorrect')
+    else:
+        st.error('Mot de passe incorrect')
+
+if not authorized_connection:
+    st.stop()
 
 class PDF(FPDF):
     def redimAuto(self, image, centreX, centreY, wMax = 1000, hMax = 1000, redim = 0):
@@ -28,18 +77,6 @@ def hex_to_rgb(hex):
 
 
 #### Début de la page streamlit
-
-# Configuration
-st.set_page_config(
-    page_title="Outil de création d'étiquettes",
-    page_icon="🏷️",
-    layout='wide',
-    menu_items={
-        'Get Help': None,
-        'Report a bug': None,
-        'About': "App created by Jean CHABANOL-SEROUDE for MediaGraphic Group"
-    }
-)
 
 st.title("Création d'étiquettes pour livraison conteneur")
 st.write("-"*10)
