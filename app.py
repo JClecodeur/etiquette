@@ -116,10 +116,11 @@ with cols[4]:
         fire = st.text_input("Préciser :", placeholder="Classé")
 
 with cols[6]:
-    date = st.date_input("Date d'arrivage :")
-    container = st.text_input("Numéro de conteneur :", placeholder="C021")
+    if not st.checkbox("Sans date"):
+        date = st.date_input("Date d'arrivage :")
 
 with cols[8]:
+    container = st.text_input("Numéro de conteneur :", placeholder="C021")
     label_limit = st.number_input("Nombre d'étiquettes nécessaires :", value = 21)
 
 company_options = ["MediaVision Blanc", "MediaPrint Blanc", "MediaFix Blanc", "MediaVision Noir", "MediaPrint Noir", "MediaFix Noir"]
@@ -134,7 +135,7 @@ for i in range(1, 11, 2):
         st.write("|")
         st.write("|")
 
-label_text = "\n".join([i for i in [product, laize, fire, (f"{container} - " if container!="" else "") + date.strftime("%d/%m/%Y")] if i!=None and i!=""])
+label_text = "\n".join([i for i in [product, laize, fire, (f"{container} - " if container!="" else "") + (date.strftime("%d/%m/%Y") if 'date' in globals() else "")] if i!=None and i!=""])
 
 def create_label():
     global label_text
@@ -152,8 +153,6 @@ def create_label():
     pdf.set_margin(marge)
     label_height = 297/7
     label_width = 210/3
-
-    line_number = label_text.count("\n")+1
 
     i = 0
     label_count = 0
@@ -175,8 +174,24 @@ def create_label():
             elif j==1:
                 cell_width = label_width
 
+            line_number = label_text.count("\n")+1
+            for elem in label_text.split("\n"):
+                if pdf.get_string_width(elem)+1 > cell_width:
+                    inline_count = 0
+                    sentence = elem.split()[0]
+                    for next, word in enumerate(elem.split()[1:], 2):
+                        sentence_plus = sentence + (" " if len(sentence)!=0 else "") + word
+                        if pdf.get_string_width(sentence_plus) +2 > cell_width:
+                            sentence = word
+                            inline_count += 1
+                        else:
+                            sentence += (" " if len(sentence)!=0 else "") + word
+                    line_number += (inline_count if inline_count else 0)
+                else:
+                    continue
+
             x = label_width*j + (marge if j==0 else 0)
-            pdf.rect(x=x, y=y,w=cell_width, h=cell_height, style='FD')
+            #pdf.rect(x=x, y=y,w=cell_width, h=cell_height, style='FD')
 
             image_height = cell_height/3
             pdf.redimAuto(f"logo/{company}.png", centreX=x+210/6, centreY=y+image_height/2, wMax = 210/3, hMax = 1000, redim = 0)
@@ -188,7 +203,7 @@ def create_label():
             if label_count >= label_limit:
                 break
         i+=1
-        
+    # return pdf.output("test.pdf")
     return bytes(pdf.output())
 
 # Mono étiquette en guise d'aperçu
@@ -207,6 +222,20 @@ def show_one_label():
     image_height = cell_height/3
     pdf.set_xy(0,0)
     line_number = label_text.count("\n")+1
+    for elem in label_text.split("\n"):
+        if pdf.get_string_width(elem)+2 > cell_width:
+            inline_count = 0
+            sentence = elem.split()[0]
+            for next, word in enumerate(elem.split()[1:], 2):
+                sentence_plus = sentence + (" " if len(sentence)!=0 else "") + word
+                if pdf.get_string_width(sentence_plus) +2 > cell_width:
+                    sentence = word
+                    inline_count += 1
+                else:
+                    sentence += (" " if len(sentence)!=0 else "") + word
+            line_number += (inline_count if inline_count else 0)
+        else:
+            continue
     pdf.redimAuto(f"logo/{company}.png", centreX=210/6, centreY=image_height/2, wMax = 210/3, hMax = 1000, redim = 0)
     pdf.set_xy(x=0, y=image_height)
     pdf.multi_cell(txt=label_text, w=(210/3), h=(cell_height-image_height)/line_number, border=False, align='C')
