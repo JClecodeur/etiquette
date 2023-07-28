@@ -20,7 +20,7 @@ else:
 st.set_page_config(
     page_title="Outil de création d'étiquettes",
     page_icon="🏷️",
-    layout=st.session_state['layout'],
+    layout='wide',#st.session_state['layout'],
     menu_items={
         'Get Help': None,
         'Report a bug': None,
@@ -28,33 +28,33 @@ st.set_page_config(
     }
 )
 
-with open('../env/config_users.yaml') as file:
-    config = yaml.load(file, Loader=yaml.SafeLoader)
+# with open('../env/config_users.yaml') as file:
+#     config = yaml.load(file, Loader=yaml.SafeLoader)
 
-authenticator = stauth.Authenticate(
-    config['credentials'],
-    config['cookie']['name'],
-    config['cookie']['key'],
-    config['cookie']['expiry_days'],
-    config['preauthorized']
-)
+# authenticator = stauth.Authenticate(
+#     config['credentials'],
+#     config['cookie']['name'],
+#     config['cookie']['key'],
+#     config['cookie']['expiry_days'],
+#     config['preauthorized']
+# )
 
-name, authentication_status, username = authenticator.login('Connexion', 'main')
-creator_name = name
+# name, authentication_status, username = authenticator.login('Connexion', 'main')
+# creator_name = name
 
-if authentication_status:
-    authenticator.logout('Déconnexion', 'main')
-    st.write(f'Bienvenue *{name}*')
-    authorized_connection = True
-    st.session_state['layout'] = 'wide'
-elif authentication_status == False:
-    if st.session_state['username'] not in config['credentials']['usernames']:
-        st.warning('Identifiant incorrect')
-    else:
-        st.error('Mot de passe incorrect')
+# if authentication_status:
+#     authenticator.logout('Déconnexion', 'main')
+#     st.write(f'Bienvenue *{name}*')
+#     authorized_connection = True
+#     st.session_state['layout'] = 'wide'
+# elif authentication_status == False:
+#     if st.session_state['username'] not in config['credentials']['usernames']:
+#         st.warning('Identifiant incorrect')
+#     else:
+#         st.error('Mot de passe incorrect')
 
-if not authorized_connection:
-    st.stop()
+# if not authorized_connection:
+#     st.stop()
 
 class PDF(FPDF):
     def redimAuto(self, image, centreX, centreY, wMax = 1000, hMax = 1000, redim = 0):
@@ -172,7 +172,16 @@ for i in range(1, 11, 2):
         st.write("|")
         st.write("|")
 
-label_text = "\n".join([i for i in [product, laize, fire, (f"{container} - " if container!="" else "") + (date.strftime("%d/%m/%Y") if 'date' in globals() else "")] if i!=None and i!=""])
+line4 = ""
+if container:
+    if 'date' in globals() and date:
+        line4 = container + " - " + date.strftime("%d/%m/%Y")
+    else:
+        line4 = container
+elif 'date' in globals() and date:
+    line4 = date.strftime("%d/%m/%Y")
+
+label_text = "\n".join([i for i in [product, laize, fire, line4] if i!=None and i!=""])
 
 def create_label():
     global label_text
@@ -181,7 +190,6 @@ def create_label():
     global label_limit
     pdf = PDF(orientation='P', unit='mm', format='A4')
     #pdf.set_page_background(background_color)
-    #pdf.set_fill_color(background_color)
     exec(f"pdf.set_fill_color{background_color}")
     pdf.add_page()
     pdf.set_font('Helvetica')
@@ -229,6 +237,8 @@ def create_label():
 
             x = label_width*j + (marge if j==0 else 0)
             #pdf.rect(x=x, y=y,w=cell_width, h=cell_height, style='FD')
+
+            pdf.rect(x=x, y=y, w=cell_width, h=cell_height, style='F')
 
             image_height = cell_height/3
             pdf.redimAuto(f"logo/{company}.png", centreX=x+210/6, centreY=y+image_height/2, wMax = 210/3, hMax = 1000, redim = 0)
